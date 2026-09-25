@@ -39,11 +39,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-              --title "Daily Tasks $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          # Reuse an existing release for this tag (re-runs), otherwise create a draft and take its id
+          # straight from the API response (the list endpoint can lag right after creation).
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -n1)"
+          if [ -z "$id" ]; then
+            id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" \
+              -f tag_name="$GITHUB_REF_NAME" -f name="Daily Tasks $GITHUB_REF_NAME" \
+              -F draft=true -F body=@"$RUNNER_TEMP/notes.md" --jq .id)"
           fi
-          id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -n1)"
           [ -n "$id" ] || { echo "release not found" >&2; exit 1; }
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
