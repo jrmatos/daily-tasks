@@ -5,27 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Daily Tasks</title>
     <script>
-      // Apply saved theme / style / background before first paint to avoid a flash.
-      // Defaults: dark theme, glass style, aurora background.
+      // Apply saved theme before first paint to avoid a flash. Default: dark.
       (function () {
-        var t = "dark", s = "glass", b = "aurora";
+        var t = "dark";
         try {
           if (localStorage.getItem("theme") === "light") t = "light";
-          if (localStorage.getItem("style") === "solid") s = "solid";
-          var v = localStorage.getItem("bg");
-          if (v === "sunset" || v === "ocean" || v === "forest" || v === "mono") b = v;
+          localStorage.removeItem("style");
+          localStorage.removeItem("bg");
         } catch (e) {}
-        var r = document.documentElement;
-        r.setAttribute("data-theme", t);
-        r.setAttribute("data-style", s);
-        r.setAttribute("data-bg", b);
-        // On Linux the app runs WebKitGTK with compositing disabled, where
-        // backdrop-filter doesn't render: glass then uses denser fills instead of blur.
-        if (/Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)) r.setAttribute("data-noblur", "");
+        document.documentElement.setAttribute("data-theme", t);
       })();
     </script>
     <link rel="stylesheet" href="/src/styles.css" />
-    <link rel="stylesheet" href="/src/glass.css" />
     <script type="module" src="/src/main.ts"></script>
   </head>
 
@@ -59,27 +50,6 @@
                   <button type="button" data-theme-set="light">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>Light
                   </button>
-                </div>
-              </div>
-              <div class="menu-row">
-                <span class="menu-label">Style</span>
-                <div class="seg seg-sm seg-style" role="group" aria-label="Style">
-                  <button type="button" data-style-set="solid">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" /></svg>Solid
-                  </button>
-                  <button type="button" data-style-set="glass">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.2 4.4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 2.8-6.6 6-11z" /><path d="M9.5 14.5a2.5 2.5 0 0 0 2 2.4" /></svg>Glass
-                  </button>
-                </div>
-              </div>
-              <div class="menu-row menu-bg-row">
-                <span class="menu-label">Background</span>
-                <div class="swatches" role="radiogroup" aria-label="Background">
-                  <button type="button" class="swatch" role="radio" data-bg-set="aurora" title="Aurora" aria-label="Aurora"></button>
-                  <button type="button" class="swatch" role="radio" data-bg-set="sunset" title="Sunset" aria-label="Sunset"></button>
-                  <button type="button" class="swatch" role="radio" data-bg-set="ocean" title="Ocean" aria-label="Ocean"></button>
-                  <button type="button" class="swatch" role="radio" data-bg-set="forest" title="Forest" aria-label="Forest"></button>
-                  <button type="button" class="swatch" role="radio" data-bg-set="mono" title="Mono" aria-label="Mono"></button>
                 </div>
               </div>
               <div class="menu-sep"></div>
