@@ -313,6 +313,10 @@ el.addForm.addEventListener("submit", (e) => {
   addTask(el.addInput.value);
   el.addInput.value = "";
 });
+if (/Mac|iPhone|iPad/.test(navigator.platform)) {
+  el.addInput.placeholder = "Add a task…  (⌘N or /)";
+}
+
 el.addInput.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     el.addInput.value = "";
@@ -346,7 +350,7 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "n") {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "n") {
     e.preventDefault();
     closeMenu();
     if (isDetailOpen()) closeDetail();

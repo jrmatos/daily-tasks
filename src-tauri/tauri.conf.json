@@ -38,7 +38,9 @@
     "active": true,
     "targets": [
       "deb",
-      "appimage"
+      "appimage",
+      "app",
+      "dmg"
     ],
     "icon": [
       "icons/32x32.png",
@@ -53,6 +55,10 @@
       "deb": {
         "section": "utils"
       }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": "-"
     }
   },
   "mainBinaryName": "daily-tasks"
