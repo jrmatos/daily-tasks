@@ -1465,3 +1465,53 @@ svg {
   gap: 8px;
   margin-top: 18px;
 }
+
+/* ---------- updater ---------- */
+.update-pill {
+  flex: none;
+  margin-right: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.update-pill:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.update-notes {
+  max-height: 220px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.update-notes-empty {
+  margin: 8px 0 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.update-progress {
+  width: 100%;
+  margin-top: 14px;
+  accent-color: var(--accent);
+}
+.update-status {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.update-status.error {
+  color: var(--danger);
+}

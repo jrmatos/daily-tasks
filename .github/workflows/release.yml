@@ -1,0 +1,109 @@
+name: release
+
+# Push a tag like v1.2.3 (see scripts/release.sh) to build signed bundles for Linux and macOS
+# and publish a GitHub Release with latest.json, which the in-app updater reads.
+# Flow: create a draft release -> each platform uploads its bundles (+ merges latest.json) -> publish.
+# While it's a draft, /releases/latest still points at the previous release, so users never see
+# a half-uploaded update.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release-id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags, for the release notes
+
+      - name: Release notes (tag message, else commits since the previous tag)
+        run: |
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          # annotated tag -> its message; lightweight tag -> the commit message
+          notes="$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME" | sed '/-----BEGIN PGP/,$d')"
+          if [ -z "$notes" ] || echo "$notes" | grep -q '^chore: release'; then
+            prev="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+            notes="$(git log --no-merges --pretty='- %s' "${prev:+$prev..}${GITHUB_REF_NAME}" | grep -v '^- chore: release' || true)"
+          fi
+          printf '%s\n' "${notes:-Bug fixes and improvements.}" > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
+      - name: Create draft release
+        id: create
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+              --title "Daily Tasks $GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -n1)"
+          [ -n "$id" ] || { echo "release not found" >&2; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            args: --bundles appimage,deb
+          - os: macos-latest # Apple Silicon
+            args: --target aarch64-apple-darwin --bundles app,dmg
+            rust-targets: aarch64-apple-darwin
+          - os: macos-latest # Intel (cross-compiled; macos-13 runners are retired)
+            args: --target x86_64-apple-darwin --bundles app,dmg
+            rust-targets: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libssl-dev build-essential
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release-id }}
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}
+
+  publish-release:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/${{ needs.create-release.outputs.release-id }}" \
+            -F draft=false -f make_latest=true >/dev/null
+          echo "Published $GITHUB_REF_NAME"

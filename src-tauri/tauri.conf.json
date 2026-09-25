@@ -59,7 +59,16 @@
     "macOS": {
       "minimumSystemVersion": "10.15",
       "signingIdentity": "-"
-    }
+    },
+    "createUpdaterArtifacts": true
   },
-  "mainBinaryName": "daily-tasks"
+  "mainBinaryName": "daily-tasks",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM2NDM5QTk1ODJFNTU5QzAKUldUQVdlV0NsWnBEeHBqRTc3aFFCRC9MNTM4YXRCYmsxSUx3ckVTVklMNXE3K0Z4eGR3bmhoOWkK",
+      "endpoints": [
+        "https://github.com/jrmatos/daily-tasks/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }

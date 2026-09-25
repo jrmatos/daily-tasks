@@ -5,16 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Daily Tasks</title>
     <script>
-      // Apply saved theme before first paint (dark by default) to avoid a flash.
+      // Apply saved theme / style / background before first paint to avoid a flash.
+      // Defaults: dark theme, glass style, aurora background.
       (function () {
-        var t = "dark";
+        var t = "dark", s = "glass", b = "aurora";
         try {
           if (localStorage.getItem("theme") === "light") t = "light";
+          if (localStorage.getItem("style") === "solid") s = "solid";
+          var v = localStorage.getItem("bg");
+          if (v === "sunset" || v === "ocean" || v === "forest" || v === "mono") b = v;
         } catch (e) {}
-        document.documentElement.setAttribute("data-theme", t);
+        var r = document.documentElement;
+        r.setAttribute("data-theme", t);
+        r.setAttribute("data-style", s);
+        r.setAttribute("data-bg", b);
+        // On Linux the app runs WebKitGTK with compositing disabled, where
+        // backdrop-filter doesn't render: glass then uses denser fills instead of blur.
+        if (/Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)) r.setAttribute("data-noblur", "");
       })();
     </script>
     <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="/src/glass.css" />
     <script type="module" src="/src/main.ts"></script>
   </head>
 
@@ -50,12 +61,40 @@
                   </button>
                 </div>
               </div>
+              <div class="menu-row">
+                <span class="menu-label">Style</span>
+                <div class="seg seg-sm seg-style" role="group" aria-label="Style">
+                  <button type="button" data-style-set="solid">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" /></svg>Solid
+                  </button>
+                  <button type="button" data-style-set="glass">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.2 4.4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 2.8-6.6 6-11z" /><path d="M9.5 14.5a2.5 2.5 0 0 0 2 2.4" /></svg>Glass
+                  </button>
+                </div>
+              </div>
+              <div class="menu-row menu-bg-row">
+                <span class="menu-label">Background</span>
+                <div class="swatches" role="radiogroup" aria-label="Background">
+                  <button type="button" class="swatch" role="radio" data-bg-set="aurora" title="Aurora" aria-label="Aurora"></button>
+                  <button type="button" class="swatch" role="radio" data-bg-set="sunset" title="Sunset" aria-label="Sunset"></button>
+                  <button type="button" class="swatch" role="radio" data-bg-set="ocean" title="Ocean" aria-label="Ocean"></button>
+                  <button type="button" class="swatch" role="radio" data-bg-set="forest" title="Forest" aria-label="Forest"></button>
+                  <button type="button" class="swatch" role="radio" data-bg-set="mono" title="Mono" aria-label="Mono"></button>
+                </div>
+              </div>
               <div class="menu-sep"></div>
               <button type="button" class="menu-item" id="menu-open-data" role="menuitem">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
                 <span class="menu-item-text">
                   <span>Open data folder</span>
                   <span class="menu-sub" id="menu-data-path"></span>
+                </span>
+              </button>
+              <button type="button" class="menu-item" id="menu-update" role="menuitem" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" /></svg>
+                <span class="menu-item-text">
+                  <span>Check for updates</span>
+                  <span class="menu-sub" id="menu-version"></span>
                 </span>
               </button>
               <div class="menu-sep"></div>

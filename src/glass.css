@@ -1,0 +1,1013 @@
+/* =========================================================
+   Liquid Glass style (data-style="glass" on <html>)
+   ---------------------------------------------------------
+   Everything that changes the look is scoped under
+   :root[data-style="glass"], so the solid style is untouched.
+   The only unscoped rules are the new menu controls (style
+   segmented control + background swatches).
+
+   Performance notes:
+   - Real backdrop blur is only used on a handful of large
+     surfaces (header, add box, tabs, detail sections, menu,
+     dialogs, toast). Task cards and attachments use a
+     translucent fill + highlights with no blur, so a long list
+     scrolls smoothly even without GPU compositing.
+   - The animated background is two fixed pseudo-elements
+     drifting via transform only; it pauses when the window is
+     unfocused/hidden ([data-idle]) and is static under
+     prefers-reduced-motion.
+   - Everything must still read well when backdrop-filter is
+     unavailable (e.g. WebKitGTK with compositing disabled):
+     fills are opaque enough to carry contrast on their own.
+   ========================================================= */
+
+/* ---------- shared glass tokens: dark ---------- */
+:root[data-style="glass"] {
+  --radius: 16px;
+
+  --text: #f4f5fa;
+  --text-2: #d9dcea;
+  --text-3: #bfc3d8;
+  --surface: rgba(255, 255, 255, 0.1);
+  --surface-2: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.14);
+  --danger: #ff8a8a;
+  --high: #ff8a8a;
+  --success: #34d399;
+
+  /* glass surfaces */
+  --glass-fill: rgba(16, 16, 30, 0.5);
+  --glass-fill-strong: rgba(22, 22, 38, 0.86);
+  --glass-blur: blur(22px) saturate(185%);
+  --glass-blur-strong: blur(30px) saturate(190%);
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.035) 42%, rgba(255, 255, 255, 0) 60%);
+  --sheen-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0) 65%);
+  --rim: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.14) 28%, rgba(255, 255, 255, 0.05) 55%, rgba(255, 255, 255, 0.16) 100%);
+  --spec: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+  --depth: 0 1px 1px rgba(0, 0, 0, 0.18), 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+  --depth-strong: 0 2px 4px rgba(0, 0, 0, 0.2), 0 24px 60px -12px rgba(0, 0, 0, 0.6);
+
+  /* cheap cards (no blur) */
+  --card-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)), rgba(8, 8, 20, 0.36);
+  --card-fill-done: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)), rgba(8, 8, 20, 0.32);
+  --card-rim: rgba(255, 255, 255, 0.24) rgba(255, 255, 255, 0.08) rgba(255, 255, 255, 0.05) rgba(255, 255, 255, 0.15);
+  --card-rim-hover: rgba(255, 255, 255, 0.36) rgba(255, 255, 255, 0.12) rgba(255, 255, 255, 0.08) rgba(255, 255, 255, 0.24);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 1px rgba(0, 0, 0, 0.16), 0 6px 14px -8px rgba(0, 0, 0, 0.5);
+  --card-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 14px 22px -14px rgba(255, 255, 255, 0.14),
+    0 1px 1px rgba(0, 0, 0, 0.16), 0 10px 20px -10px rgba(0, 0, 0, 0.55);
+
+  /* pill controls inside glass (tabs / segmented) */
+  --well: rgba(0, 0, 0, 0.22);
+  --pill: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  --pill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 10px -4px rgba(0, 0, 0, 0.4);
+  --grain-opacity: 0.55;
+
+  /* ---- background: aurora (default) ---- */
+  --g-base: #0b0a1f;
+  --g1: rgba(79, 70, 229, 0.75);
+  --g2: rgba(126, 34, 206, 0.7);
+  --g3: rgba(15, 118, 110, 0.72);
+  --g4: rgba(2, 132, 199, 0.35);
+  --g5: rgba(162, 28, 175, 0.3);
+  --accent: #5f54ee;
+  --accent-2: #7c4ddf;
+  --accent-soft: rgba(129, 140, 248, 0.22);
+  --accent-text: #c3c8ff;
+  --normal: #a3aaff;
+  --low: var(--text-3);
+  --bg: var(--g-base);
+}
+
+/* ---------- shared glass tokens: light ---------- */
+:root[data-style="glass"][data-theme="light"] {
+  --text: #111226;
+  --text-2: #363a52;
+  --text-3: #4f536b;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(30, 30, 90, 0.07);
+  --border: rgba(30, 30, 90, 0.12);
+  --danger: #c9252c;
+  --high: #e02d36;
+  --success: #0f9f6e;
+
+  --glass-fill: rgba(255, 255, 255, 0.52);
+  --glass-fill-strong: rgba(255, 255, 255, 0.86);
+  --glass-blur: blur(22px) saturate(170%);
+  --glass-blur-strong: blur(30px) saturate(180%);
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.14) 45%, rgba(255, 255, 255, 0) 62%);
+  --sheen-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.25) 45%, rgba(255, 255, 255, 0) 65%);
+  --rim: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.7) 30%, rgba(255, 255, 255, 0.35) 60%, rgba(255, 255, 255, 0.7) 100%);
+  --spec: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+  --depth: 0 1px 2px rgba(40, 40, 110, 0.07), 0 10px 28px -10px rgba(40, 40, 110, 0.28);
+  --depth-strong: 0 2px 6px rgba(40, 40, 110, 0.1), 0 24px 60px -14px rgba(40, 40, 110, 0.38);
+
+  --card-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.6));
+  --card-fill-done: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.42));
+  --card-rim: rgba(255, 255, 255, 1) rgba(255, 255, 255, 0.7) rgba(255, 255, 255, 0.5) rgba(255, 255, 255, 0.9);
+  --card-rim-hover: rgba(255, 255, 255, 1) rgba(255, 255, 255, 0.9) rgba(255, 255, 255, 0.75) rgba(255, 255, 255, 1);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(40, 40, 110, 0.06), 0 6px 14px -8px rgba(40, 40, 110, 0.22);
+  --card-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 14px 22px -14px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(40, 40, 110, 0.07), 0 10px 22px -10px rgba(40, 40, 110, 0.3);
+
+  --well: rgba(30, 30, 90, 0.07);
+  --pill: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.8));
+  --pill-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 110, 0.12), 0 4px 10px -4px rgba(40, 40, 110, 0.2);
+  --grain-opacity: 0.35;
+
+  /* ---- background: aurora (default) ---- */
+  --g-base: #eceefe;
+  --g1: rgba(129, 140, 248, 0.6);
+  --g2: rgba(192, 132, 252, 0.5);
+  --g3: rgba(45, 212, 191, 0.45);
+  --g4: rgba(125, 211, 252, 0.45);
+  --g5: rgba(244, 114, 182, 0.2);
+  --accent: #5b50e8;
+  --accent-2: #7340dc;
+  --accent-soft: rgba(91, 80, 232, 0.13);
+  --accent-text: #3f33c9;
+  --normal: #5b50e8;
+}
+
+/* ---------- background presets: dark ---------- */
+:root[data-style="glass"][data-bg="sunset"] {
+  --g-base: #160a16;
+  --g1: rgba(194, 65, 12, 0.62);
+  --g2: rgba(190, 24, 93, 0.62);
+  --g3: rgba(107, 33, 168, 0.65);
+  --g4: rgba(234, 88, 12, 0.24);
+  --g5: rgba(225, 29, 72, 0.24);
+  --accent: #cc2a7c;
+  --accent-2: #8e3ae6;
+  --accent-soft: rgba(244, 114, 182, 0.2);
+  --accent-text: #ffc1d6;
+  --normal: #d6a8ff;
+}
+
+:root[data-style="glass"][data-bg="ocean"] {
+  --g-base: #04111f;
+  --g1: rgba(29, 78, 216, 0.68);
+  --g2: rgba(14, 116, 144, 0.62);
+  --g3: rgba(30, 58, 138, 0.62);
+  --g4: rgba(8, 145, 178, 0.28);
+  --g5: rgba(37, 99, 235, 0.25);
+  --accent: #2563eb;
+  --accent-2: #0e7490;
+  --accent-soft: rgba(56, 189, 248, 0.2);
+  --accent-text: #b3e5ff;
+  --normal: #6cc4ff;
+}
+
+:root[data-style="glass"][data-bg="forest"] {
+  --g-base: #06130e;
+  --g1: rgba(21, 128, 61, 0.55);
+  --g2: rgba(15, 118, 110, 0.58);
+  --g3: rgba(22, 78, 99, 0.58);
+  --g4: rgba(101, 163, 13, 0.2);
+  --g5: rgba(20, 184, 166, 0.2);
+  --accent: #15803d;
+  --accent-2: #0f766e;
+  --accent-soft: rgba(52, 211, 153, 0.18);
+  --accent-text: #a7f3d0;
+  --normal: #4ade80;
+}
+
+:root[data-style="glass"][data-bg="mono"] {
+  --g-base: #0e0f13;
+  --g1: rgba(100, 108, 128, 0.42);
+  --g2: rgba(71, 78, 94, 0.45);
+  --g3: rgba(148, 156, 176, 0.18);
+  --g4: rgba(90, 96, 112, 0.28);
+  --g5: rgba(160, 166, 182, 0.12);
+  --accent: #5b6477;
+  --accent-2: #3f4655;
+  --accent-soft: rgba(203, 213, 225, 0.14);
+  --accent-text: #dfe4ec;
+  --normal: #b4bccb;
+}
+
+/* ---------- background presets: light ---------- */
+:root[data-style="glass"][data-theme="light"][data-bg="sunset"] {
+  --g-base: #fff1ec;
+  --g1: rgba(253, 164, 100, 0.6);
+  --g2: rgba(244, 114, 182, 0.5);
+  --g3: rgba(192, 132, 252, 0.45);
+  --g4: rgba(253, 224, 71, 0.3);
+  --g5: rgba(251, 113, 133, 0.28);
+  --accent: #cf1f66;
+  --accent-2: #7e2fd6;
+  --accent-soft: rgba(219, 39, 119, 0.12);
+  --accent-text: #a3134f;
+  --normal: #8b3fd9;
+}
+
+:root[data-style="glass"][data-theme="light"][data-bg="ocean"] {
+  --g-base: #ebf4ff;
+  --g1: rgba(96, 165, 250, 0.55);
+  --g2: rgba(34, 211, 238, 0.45);
+  --g3: rgba(129, 140, 248, 0.35);
+  --g4: rgba(125, 211, 252, 0.5);
+  --g5: rgba(45, 212, 191, 0.25);
+  --accent: #1d5fe0;
+  --accent-2: #0e7490;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --accent-text: #1746b5;
+  --normal: #1d5fe0;
+}
+
+:root[data-style="glass"][data-theme="light"][data-bg="forest"] {
+  --g-base: #edf8f1;
+  --g1: rgba(74, 222, 128, 0.45);
+  --g2: rgba(45, 212, 191, 0.45);
+  --g3: rgba(163, 230, 53, 0.3);
+  --g4: rgba(110, 231, 183, 0.45);
+  --g5: rgba(56, 189, 248, 0.2);
+  --accent: #15803d;
+  --accent-2: #0f766e;
+  --accent-soft: rgba(21, 128, 61, 0.12);
+  --accent-text: #126434;
+  --normal: #15803d;
+}
+
+:root[data-style="glass"][data-theme="light"][data-bg="mono"] {
+  --g-base: #eff0f3;
+  --g1: rgba(203, 207, 216, 0.7);
+  --g2: rgba(226, 228, 234, 0.8);
+  --g3: rgba(180, 186, 198, 0.4);
+  --g4: rgba(255, 255, 255, 0.7);
+  --g5: rgba(160, 168, 184, 0.2);
+  --accent: #4b5466;
+  --accent-2: #2f3542;
+  --accent-soft: rgba(51, 65, 85, 0.1);
+  --accent-text: #2f3747;
+  --normal: #4b5466;
+}
+
+/* ---------- no-blur fallback (Linux: WebKitGTK without compositing) ----------
+   backdrop-filter isn't rendered there, so floating layers (menu, dialogs,
+   toast) get near-opaque fills and panels a slightly denser fill. */
+:root[data-style="glass"][data-noblur] {
+  --glass-fill: rgba(16, 16, 30, 0.56);
+  --glass-fill-strong: #1a1a2b;
+}
+
+:root[data-style="glass"][data-noblur][data-theme="light"] {
+  --glass-fill: rgba(255, 255, 255, 0.6);
+  --glass-fill-strong: #fbfbfe;
+}
+
+:root[data-style="glass"][data-noblur] *,
+:root[data-style="glass"][data-noblur] .header::before {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* =========================================================
+   Animated mesh background
+   ========================================================= */
+:root[data-style="glass"],
+:root[data-style="glass"] body {
+  background: var(--g-base);
+}
+
+:root[data-style="glass"] body {
+  background: transparent;
+}
+
+:root[data-style="glass"] body::before,
+:root[data-style="glass"] body::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: -25%;
+  pointer-events: none;
+  will-change: transform;
+  animation: glass-drift-a 38s ease-in-out infinite alternate;
+}
+
+:root[data-style="glass"] body::before {
+  background:
+    radial-gradient(46% 36% at 30% 30%, var(--g1), transparent 70%),
+    radial-gradient(40% 34% at 72% 40%, var(--g2), transparent 70%),
+    radial-gradient(50% 38% at 38% 72%, var(--g3), transparent 70%);
+}
+
+:root[data-style="glass"] body::after {
+  background:
+    radial-gradient(34% 28% at 70% 68%, var(--g4), transparent 70%),
+    radial-gradient(30% 24% at 50% 50%, var(--g5), transparent 70%);
+  animation-name: glass-drift-b;
+  animation-duration: 52s;
+}
+
+/* Static grain on top of the gradient to avoid banding. */
+:root[data-style="glass"] .app::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 .09'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:root[data-style="glass"] .app {
+  z-index: 0;
+}
+
+:root[data-style="glass"][data-idle] body::before,
+:root[data-style="glass"][data-idle] body::after {
+  animation-play-state: paused;
+}
+
+@keyframes glass-drift-a {
+  0% {
+    transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, 2.5%, 0) rotate(7deg) scale(1.07);
+  }
+  100% {
+    transform: translate3d(-1.5%, 4%, 0) rotate(-5deg) scale(1.03);
+  }
+}
+
+@keyframes glass-drift-b {
+  0% {
+    transform: translate3d(4%, 3%, 0) rotate(0deg) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-3%, -2%, 0) rotate(-8deg) scale(1);
+  }
+  100% {
+    transform: translate3d(2%, -4%, 0) rotate(5deg) scale(1.08);
+  }
+}
+
+/* Without GPU compositing every drift frame is a full-window software repaint
+   (~90% of a core measured in WebKitGTK), so the mesh stays static there. */
+:root[data-style="glass"][data-noblur] body::before,
+:root[data-style="glass"][data-noblur] body::after {
+  animation: none;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style="glass"] body::before,
+  :root[data-style="glass"] body::after {
+    animation: none !important;
+    will-change: auto;
+  }
+}
+
+/* =========================================================
+   Glass surfaces (real blur): add box, tabs, detail sections,
+   menu, dialogs, toast. Each gets:
+   - translucent fill + top sheen, backdrop blur/saturate
+   - ::before  luminous 1px gradient rim (brighter top-left)
+   - ::after   sheen overlay that brightens on hover
+   ========================================================= */
+:root[data-style="glass"] :is(.add, .tabs, .props, .menu, .modal, .toast, .detail-head) {
+  isolation: isolate;
+  border: 1px solid transparent;
+  background: var(--sheen), var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--spec), var(--depth);
+}
+
+:root[data-style="glass"] :is(.add, .tabs, .props, .modal, .detail-head) {
+  position: relative;
+}
+
+:root[data-style="glass"] :is(.add, .tabs, .props, .menu, .modal, .toast, .detail-head, .header)::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* hover sheen overlay (below content, above fill) */
+:root[data-style="glass"] :is(.add, .props, .detail-head)::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--sheen-strong);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+:root[data-style="glass"] :is(.add, .props, .detail-head):hover::before,
+:root[data-style="glass"] .add:focus-within::before {
+  opacity: 0.7;
+}
+
+/* stronger glass for floating layers */
+:root[data-style="glass"] :is(.menu, .modal, .toast) {
+  background: var(--sheen), var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  box-shadow: var(--spec), var(--depth-strong);
+}
+
+/* ---------- header bar ----------
+   The blur lives on ::before so the ⋮ menu (a descendant) is not
+   trapped inside the header's backdrop root and can blur the list. */
+:root[data-style="glass"] .header {
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+  padding: 6px;
+  border-radius: 22px;
+}
+
+:root[data-style="glass"] .header::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--sheen), var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--spec), var(--depth);
+  pointer-events: none;
+}
+
+:root[data-style="glass"] .header::after {
+  inset: 0;
+}
+
+:root[data-style="glass"] .icon-btn {
+  border-radius: 999px;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+:root[data-style="glass"] .icon-btn:hover {
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
+}
+
+:root[data-style="glass"] .icon-btn:active {
+  transform: scale(0.94);
+}
+
+:root[data-style="glass"] .today-btn {
+  padding: 7px 13px;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px -4px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: filter 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+
+:root[data-style="glass"] .today-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---------- progress ---------- */
+:root[data-style="glass"] .progress {
+  padding: 0 6px;
+}
+
+:root[data-style="glass"] .progress-text {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .progress-track {
+  height: 6px;
+  background: var(--well);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15), 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+:root[data-style="glass"] .progress-fill {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+:root[data-style="glass"] .progress-fill.complete {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 70%), var(--success);
+}
+
+/* ---------- add box ---------- */
+:root[data-style="glass"] .add {
+  padding: 5px 5px 5px 7px;
+  border-radius: 22px;
+  transition: box-shadow 0.2s;
+}
+
+:root[data-style="glass"] .add:focus-within {
+  border-color: transparent;
+  box-shadow: var(--spec), var(--depth), 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+:root[data-style="glass"] .add input::placeholder {
+  color: var(--text-3);
+}
+
+:root[data-style="glass"] .add-btn {
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 12px -4px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+:root[data-style="glass"] :is(.prio-toggle, .prio, .del) {
+  border-radius: 999px;
+}
+
+/* ---------- banner ---------- */
+:root[data-style="glass"] .banner {
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:root[data-style="glass"][data-theme="light"] .banner {
+  background: rgba(255, 247, 230, 0.85);
+}
+
+:root[data-style="glass"] .banner button {
+  border-radius: 999px;
+}
+
+/* ---------- tabs & segmented controls ---------- */
+:root[data-style="glass"] .tabs {
+  gap: 3px;
+  padding: 4px;
+  border-radius: 999px;
+}
+
+:root[data-style="glass"] .tab,
+:root[data-style="glass"] .seg button {
+  border-radius: 999px;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.12s;
+}
+
+:root[data-style="glass"] .tab:hover:not(.active),
+:root[data-style="glass"] .seg button:hover:not(.active) {
+  background: var(--surface-2);
+}
+
+:root[data-style="glass"] .tab.active,
+:root[data-style="glass"] .seg button.active {
+  color: var(--text);
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
+}
+
+:root[data-style="glass"] .tab:active,
+:root[data-style="glass"] .seg button:active {
+  transform: scale(0.98);
+}
+
+:root[data-style="glass"] .count {
+  color: var(--text-3);
+}
+
+:root[data-style="glass"] .seg {
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--well);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------- task cards (no blur: cheap translucent glass) ---------- */
+:root[data-style="glass"] .list {
+  gap: 8px;
+  padding: 3px 3px 8px;
+}
+
+:root[data-style="glass"] .task {
+  min-height: 50px;
+  padding: 7px 7px 7px 12px;
+  background: var(--card-fill);
+  border: 1px solid;
+  border-color: var(--card-rim);
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
+  transition: opacity 0.25s, border-color 0.2s, box-shadow 0.2s, transform 0.12s;
+}
+
+:root[data-style="glass"] .task:hover {
+  border-color: var(--card-rim-hover);
+  box-shadow: var(--card-shadow-hover);
+}
+
+:root[data-style="glass"] .task:active {
+  transform: scale(0.98);
+}
+
+:root[data-style="glass"] .task.done {
+  opacity: 1;
+  background: var(--card-fill-done);
+}
+
+:root[data-style="glass"] .task.done .title {
+  color: var(--text-3);
+  text-decoration-color: color-mix(in srgb, var(--text-3) 80%, transparent);
+}
+
+:root[data-style="glass"] .task.done .indicators {
+  opacity: 0.75;
+}
+
+:root[data-style="glass"] .check {
+  border-color: color-mix(in srgb, var(--text-2) 70%, transparent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-style="glass"] .task.done .check,
+:root[data-style="glass"] .check.big[aria-checked="true"] {
+  border-color: transparent;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 2px 8px -2px color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+:root[data-style="glass"] .task[data-priority="high"]:not(.done) .check,
+:root[data-style="glass"] .detail[data-prio="high"] .check.big[aria-checked="false"] {
+  border-color: var(--high);
+}
+
+:root[data-style="glass"] .indicators {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .del:hover {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+/* list scrollbar */
+:root[data-style="glass"] :is(.list, .detail-scroll)::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-3) 45%, transparent);
+}
+
+/* ---------- empty state ---------- */
+:root[data-style="glass"] .empty-icon {
+  border-radius: 20px;
+  color: var(--accent-text);
+  background: var(--sheen), var(--glass-fill);
+  box-shadow: var(--spec), var(--depth);
+}
+
+:root[data-style="glass"] .empty-sub,
+:root[data-style="glass"] .footer {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .link-btn {
+  border-radius: 999px;
+}
+
+/* ---------- toast ---------- */
+:root[data-style="glass"] .toast {
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 10px 9px 16px;
+}
+
+:root[data-style="glass"] .toast button {
+  border-radius: 999px;
+  color: var(--accent-text);
+}
+
+:root[data-style="glass"] .toast button:hover {
+  background: var(--surface-2);
+}
+
+/* ---------- menu popover ---------- */
+:root[data-style="glass"] .menu {
+  width: 272px;
+  padding: 8px;
+  border-radius: 20px;
+}
+
+:root[data-style="glass"] .menu-item {
+  border-radius: 12px;
+}
+
+:root[data-style="glass"] .menu-item:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+:root[data-style="glass"] .menu-sep {
+  background: var(--border);
+}
+
+:root[data-style="glass"] .menu-label,
+:root[data-style="glass"] .menu-item svg {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .menu-item.danger,
+:root[data-style="glass"] .menu-item.danger svg {
+  color: var(--danger);
+}
+
+/* ---------- dialogs ---------- */
+:root[data-style="glass"] .modal-backdrop {
+  background: rgba(6, 6, 16, 0.38);
+}
+
+:root[data-style="glass"][data-theme="light"] .modal-backdrop {
+  background: rgba(50, 40, 90, 0.12);
+}
+
+:root[data-style="glass"] .modal {
+  padding: 20px;
+  border-radius: 26px;
+}
+
+:root[data-style="glass"] .modal-msg {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .btn {
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
+  transition: filter 0.15s, transform 0.12s;
+}
+
+:root[data-style="glass"] .btn-primary,
+:root[data-style="glass"] .btn-danger {
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px -4px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+:root[data-style="glass"] .btn-primary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+:root[data-style="glass"] .btn-danger {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 55%), #d92d35;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px -4px rgba(217, 45, 53, 0.6);
+}
+
+:root[data-style="glass"] .btn:active {
+  transform: scale(0.98);
+}
+
+:root[data-style="glass"] .field {
+  border-radius: 12px;
+  border-color: var(--border);
+  background: var(--well);
+}
+
+:root[data-style="glass"][data-theme="light"] .field {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* =========================================================
+   Detail view: transparent page over the mesh, glass sections.
+   The list slides slightly left and fades (iOS-style push) so
+   it never shows through the translucent detail panels.
+   ========================================================= */
+:root[data-style="glass"] .list-view {
+  transition: opacity 0.22s, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+}
+
+:root[data-style="glass"] .app:has(.detail.open) .list-view {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-16%);
+  transition: opacity 0.22s, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.22s;
+}
+
+:root[data-style="glass"] .detail {
+  background: transparent;
+}
+
+:root[data-style="glass"] .detail-head {
+  margin: 14px 14px 6px;
+  padding: 4px;
+  border-radius: 22px;
+}
+
+:root[data-style="glass"] .back-btn {
+  min-height: 40px;
+  margin-left: 0;
+  border-radius: 999px;
+}
+
+:root[data-style="glass"] .back-btn:hover {
+  color: var(--text);
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
+}
+
+:root[data-style="glass"] .back-btn:active {
+  transform: scale(0.98);
+}
+
+:root[data-style="glass"] .detail-title:hover {
+  background: var(--surface-2);
+}
+
+:root[data-style="glass"] .detail-title:focus {
+  border-color: transparent;
+  background: var(--glass-fill);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+:root[data-style="glass"] .props {
+  padding: 14px;
+  border-radius: 20px;
+}
+
+:root[data-style="glass"] .prop-label,
+:root[data-style="glass"] .section-status,
+:root[data-style="glass"] .detail-meta {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .date-input {
+  border-radius: 999px;
+  padding: 5px 12px;
+  border-color: var(--border);
+  background: var(--well);
+}
+
+:root[data-style="glass"][data-theme="light"] .date-input {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+:root[data-style="glass"] .section-head h2 {
+  padding-left: 4px;
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .chip-btn {
+  padding: 6px 12px;
+  color: var(--accent-text);
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
+  transition: filter 0.15s, transform 0.12s;
+}
+
+:root[data-style="glass"] .chip-btn:active {
+  transform: scale(0.98);
+}
+
+/* Notes is a <textarea> (no pseudo-elements), so its rim is built from
+   per-side border colours + an inset highlight: still brighter top-left. */
+:root[data-style="glass"] .notes {
+  border-radius: 20px;
+  padding: 14px;
+  border-color: var(--card-rim);
+  background: var(--sheen), var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--spec), var(--depth);
+}
+
+:root[data-style="glass"] .notes::placeholder {
+  color: var(--text-3);
+}
+
+:root[data-style="glass"] .notes:focus {
+  border-color: var(--card-rim-hover);
+  box-shadow: var(--spec), var(--depth), 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* attachments: cheap card glass, like tasks */
+:root[data-style="glass"] .att {
+  border-radius: 16px;
+  background: var(--card-fill);
+  border-color: var(--card-rim);
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.12s;
+}
+
+:root[data-style="glass"] .att:hover {
+  border-color: var(--card-rim-hover);
+  box-shadow: var(--card-shadow-hover);
+}
+
+:root[data-style="glass"] .att:active {
+  transform: scale(0.98);
+}
+
+:root[data-style="glass"] .thumb-img {
+  background: var(--well);
+}
+
+:root[data-style="glass"] .att-thumb .att-actions {
+  border-radius: 999px;
+  background: var(--glass-fill-strong);
+}
+
+:root[data-style="glass"] .att-action {
+  border-radius: 999px;
+}
+
+:root[data-style="glass"] :is(.file-icon, .link-icon) {
+  border-radius: 12px;
+}
+
+:root[data-style="glass"] .att-sub {
+  color: var(--text-2);
+}
+
+:root[data-style="glass"] .att-empty {
+  color: var(--text-2);
+  border-color: color-mix(in srgb, var(--text-3) 50%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--glass-fill) 50%, transparent);
+}
+
+:root[data-style="glass"] .drop-overlay {
+  border-radius: 24px;
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* =========================================================
+   Menu controls: Style segmented control + background swatches
+   (shown in both styles; swatch row only when glass is active)
+   ========================================================= */
+:root:not([data-style="glass"]) .menu-bg-row {
+  display: none;
+}
+
+.swatches {
+  display: flex;
+  gap: 7px;
+  padding: 2px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch:active {
+  transform: scale(0.94);
+}
+
+.swatch.active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 0 2px var(--surface), 0 0 0 4px var(--text);
+}
+
+:root[data-style="glass"] .swatch.active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 0 2px transparent, 0 0 0 3.5px var(--text);
+}
+
+.swatch[data-bg-set="aurora"] {
+  background: radial-gradient(circle at 30% 25%, #818cf8, transparent 60%),
+    radial-gradient(circle at 80% 40%, #a855f7, transparent 60%),
+    radial-gradient(circle at 40% 90%, #14b8a6, transparent 65%), #1e1b4b;
+}
+
+.swatch[data-bg-set="sunset"] {
+  background: radial-gradient(circle at 25% 25%, #fb923c, transparent 60%),
+    radial-gradient(circle at 80% 45%, #ec4899, transparent 60%),
+    radial-gradient(circle at 40% 95%, #9333ea, transparent 65%), #4a1030;
+}
+
+.swatch[data-bg-set="ocean"] {
+  background: radial-gradient(circle at 30% 25%, #60a5fa, transparent 60%),
+    radial-gradient(circle at 80% 50%, #22d3ee, transparent 60%),
+    radial-gradient(circle at 35% 95%, #1e40af, transparent 65%), #0c2a4d;
+}
+
+.swatch[data-bg-set="forest"] {
+  background: radial-gradient(circle at 30% 25%, #4ade80, transparent 60%),
+    radial-gradient(circle at 80% 50%, #2dd4bf, transparent 60%),
+    radial-gradient(circle at 35% 95%, #166534, transparent 65%), #0b2a1d;
+}
+
+.swatch[data-bg-set="mono"] {
+  background: radial-gradient(circle at 30% 25%, #9ca3af, transparent 60%),
+    radial-gradient(circle at 80% 55%, #6b7280, transparent 60%), #2a2d34;
+}
+
+.seg-style button svg {
+  width: 13px;
+  height: 13px;
+}

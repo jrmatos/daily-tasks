@@ -16,8 +16,10 @@ jobs:
             bundles: deb,appimage
           - os: macos-latest # Apple Silicon
             bundles: app,dmg
-          - os: macos-13 # Intel
+            target: aarch64-apple-darwin
+          - os: macos-latest # Intel (cross-compiled; macos-13 runners are retired)
             bundles: app,dmg
+            target: x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +36,8 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -42,13 +46,15 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: cargo test --manifest-path src-tauri/Cargo.toml
-      - run: npm run tauri build -- --bundles ${{ matrix.bundles }}
+      # CI has no signing key (PRs never get secrets), so skip the signed updater artifacts here;
+      # signed builds happen in release.yml.
+      - run: npm run tauri build -- --bundles ${{ matrix.bundles }} ${{ matrix.target && format('--target {0}', matrix.target) || '' }} --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: daily-tasks-${{ matrix.os }}
+          name: daily-tasks-${{ matrix.target || matrix.os }}
           path: |
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/appimage/*.AppImage
-            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/*/release/bundle/dmg/*.dmg
           if-no-files-found: error
