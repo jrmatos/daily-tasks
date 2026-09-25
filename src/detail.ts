@@ -499,6 +499,20 @@ export function initDetail(opts: { onClosed: (taskId: string) => void }): void {
   onClosed = opts.onClosed;
 
   el.back.addEventListener("click", closeDetail);
+  // Mouse "back" side button and Alt+Left also return to the list.
+  window.addEventListener("mouseup", (e) => {
+    if (e.button === 3 && state.detailId) {
+      e.preventDefault();
+      closeDetail();
+    }
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.altKey && e.key === "ArrowLeft" && state.detailId) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeDetail();
+    }
+  }, true);
   el.del.addEventListener("click", () => void deleteCurrentTask());
   el.check.addEventListener("click", () => {
     const t = getTask(state.detailId);

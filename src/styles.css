@@ -909,11 +909,57 @@ svg {
   padding: 14px 14px 6px;
 }
 
-.detail-crumb {
+.detail-spacer {
   flex: 1;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-2);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 120px;
+  margin-left: -6px;
+  padding: 0 18px 0 10px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.back-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+
+.back-btn:hover {
+  background: var(--surface-2);
+  color: var(--accent, var(--text));
+}
+
+.back-btn:hover svg {
+  transform: translateX(-3px);
+}
+
+.back-btn:active {
+  transform: scale(0.97);
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+
+.detail-crumb {
+  font: inherit;
 }
 
 .detail-scroll {
