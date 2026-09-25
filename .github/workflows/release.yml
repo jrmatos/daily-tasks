@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release-id: ${{ steps.create.outputs.id }}
+      notes: ${{ steps.create.outputs.notes }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,6 +50,8 @@ jobs:
           fi
           [ -n "$id" ] || { echo "release not found" >&2; exit 1; }
           echo "id=$id" >> "$GITHUB_OUTPUT"
+          # expose the notes so tauri-action puts them in latest.json (shown in the in-app update dialog)
+          { echo "notes<<__NOTES_EOF__"; cat "$RUNNER_TEMP/notes.md"; echo "__NOTES_EOF__"; } >> "$GITHUB_OUTPUT"
 
   build:
     needs: create-release
@@ -96,6 +99,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release-id }}
+          releaseBody: ${{ needs.create-release.outputs.notes }}
           includeUpdaterJson: true
           args: ${{ matrix.args }}
 
